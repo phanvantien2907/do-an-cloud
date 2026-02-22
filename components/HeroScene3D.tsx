@@ -5,19 +5,28 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, MeshDistortMaterial, Sparkles } from "@react-three/drei";
 import * as THREE from "three";
 
-/* ── Floating distorted sphere (central orb) ── */
+/* ── Floating distorted sphere — follows mouse 360° ── */
 function CoreOrb() {
   const meshRef = useRef<THREE.Mesh>(null!);
+  const targetRotation = useRef({ x: 0, y: 0 });
 
-  useFrame(({ clock }) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y = clock.getElapsedTime() * 0.15;
-      meshRef.current.rotation.x = Math.sin(clock.getElapsedTime() * 0.1) * 0.1;
-    }
+  useFrame(({ mouse, clock }) => {
+    if (!meshRef.current) return;
+
+    // Map mouse position to full 360° rotation
+    targetRotation.current.y = mouse.x * Math.PI;  // -π to +π (full 360°)
+    targetRotation.current.x = -mouse.y * Math.PI;  // -π to +π (full 360°)
+
+    // Smooth interpolation toward target
+    meshRef.current.rotation.y += (targetRotation.current.y - meshRef.current.rotation.y) * 0.05;
+    meshRef.current.rotation.x += (targetRotation.current.x - meshRef.current.rotation.x) * 0.05;
+
+    // Gentle idle spin when mouse is centered
+    meshRef.current.rotation.z = Math.sin(clock.getElapsedTime() * 0.3) * 0.08;
   });
 
   return (
-    <Float speed={1.5} rotationIntensity={0.4} floatIntensity={1.2}>
+    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={1.2}>
       <mesh ref={meshRef} scale={1.6}>
         <icosahedronGeometry args={[1, 12]} />
         <MeshDistortMaterial
@@ -207,9 +216,9 @@ function Scene() {
   useFrame(({ mouse }) => {
     if (groupRef.current) {
       groupRef.current.rotation.y +=
-        (mouse.x * 0.15 - groupRef.current.rotation.y) * 0.03;
+        (mouse.x * 0.25 - groupRef.current.rotation.y) * 0.03;
       groupRef.current.rotation.x +=
-        (-mouse.y * 0.1 - groupRef.current.rotation.x) * 0.03;
+        (-mouse.y * 0.2 - groupRef.current.rotation.x) * 0.03;
     }
   });
 
